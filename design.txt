@@ -1,0 +1,7 @@
+1. Follow API: WS server that exposes WS API to follow a user
+2. Tweet API: WS server that exposes WS API to post a tweet
+3. Get Tweets for User ID API
+4. Notification API: Lists tweets. Uses a channel to get the tweets.
+
+# 1, 2, 3 as a single service - WS Post API
+# 4 as a seperate service - Connects to API 3. If client receieves a message, push to to the channel. In the other goroutine, consume this channel.
