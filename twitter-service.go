@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
+)
+
+// Friends
+var (
+	friends = make(map[int]map[int]bool)
 )
 
 // Generic
 type APIRequest interface {
 	GetAction() string
-	GetUser() int
-	GetContent() string
-	GetFollowee() int
 }
 
 // Follow request
@@ -39,33 +42,11 @@ func (r TweetPost) GetAction() string {
 	return r.Action
 }
 
-func (r FollowReq) GetUser() int {
-	fmt.Println("get user")
-	fmt.Println(r.User)
-	return r.User
-}
-
-func (r FollowReq) GetFollowee() int {
-	return r.Followee
-}
-
-func (r TweetPost) GetUser() int {
-	return r.User
-}
-
-func (r TweetPost) GetContent() string {
-	return r.Content
-}
-
 // Clients connected to Twitter Service
 var clients = make(map[*websocket.Conn]bool)
 
 // Notifications
 var notifier = make(chan FollowReq)
-
-//var notifier = make(chan APIRequest)
-var posts = make(chan TweetPost)
-var notes = make(chan FollowReq)
 
 // Upgrader
 var upgrader = websocket.Upgrader{
@@ -90,20 +71,22 @@ func main() {
 
 func notifications() {
 
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
 	go func() {
 		for {
 			msg := <-notifier
-			fmt.Printf("Request by %d for %d", msg.GetUser(), msg.GetFollowee())
+			fmt.Printf("Request by %d for %d", msg.User, msg.Followee)
 			for client := range clients {
 				client.WriteJSON(&msg)
 			}
 		}
 	}()
 
-	for {
-		//post := <-posts
-		//note := <-notifier
-	}
+	wg.Done()
+
 }
 
 func follow(friends map[int]map[int]bool, userId int, followee int) {
@@ -123,27 +106,17 @@ func getFollowers(friends map[int]map[int]bool, userID int) {
 }
 
 func service(w http.ResponseWriter, r *http.Request) {
-	friends := make(map[int]map[int]bool) // every connection request leads to a new memory space, hence inconsistency!,make it global
+
+	var wg sync.WaitGroup
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	clients[ws] = true
 
-	/*
-		go func() {
-			for {
-				fmt.Println("running2")
-				var request FollowReq
-				ws.ReadJSON(&request)
-				follow(friends, request.User, request.Followee)
-				getFollowers(friends, 1)
-				notifier <- request
-			}
-		}()
-	*/
+	wg.Add(1)
 
 	go func() {
 		for {
@@ -160,22 +133,6 @@ func service(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	for {
-		//fmt.Println("running2")
-		//var request FollowReq
-		//ws.ReadJSON(&request)
-		//follow(friends, request.User, request.Followee)
-		//getFollowers(friends, 1)
-		//notifier <- request
-	}
+	wg.Wait()
 
-	/*
-		for {
-			var request TweetPost
-			ws.ReadJSON(&request)
-			if request.Action == "post" {
-				posts <- request
-			}
-		}
-	*/
 }

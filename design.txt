@@ -5,3 +5,8 @@
 
 # 1, 2, 3 as a single service - WS Post API
 # 4 as a seperate service - Connects to API 3. If client receieves a message, push to to the channel. In the other goroutine, consume this channel.
+
+Create a file where you export global Variables that are actually request names. 
+These request names or variables must be mapped to handlers.
+These handlers take in the decoded WS request obtained by Unmarshalling the JSON data.
+When we unmarshall we just take a desired part of the API json request
