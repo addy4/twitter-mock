@@ -19,26 +19,14 @@ var upgrader = websocket.Upgrader{
 
 func main() {
 
-	msg := &apis.RequestDecode{}
-	jsonData := `
-		{
-			"follow" : {
-				"current_user": 1,
-				"followed_user": 2
-			}
-		}
-	`
-	err := json.Unmarshal([]byte(jsonData), &msg)
+	// WebSocket APIs Service
+	http.HandleFunc("/web", service)
 
-	fmt.Println(err)
-	fmt.Println(msg.FollowRequestDetails)
-	fmt.Print(msg.PostRequestDetails)
+	// Broadcast
+	go apis.Broadcast()
 
-	fmt.Println("##### Launching Twitter Server....")
-
-	http.HandleFunc("/proj", service)
-
-	log.Print("Server starting at localhost: 5020")
+	// Starting Service
+	log.Print("Twitter Server Starting At localhost: 5020")
 	if err := http.ListenAndServe(":5020", nil); err != nil {
 		log.Fatal(err)
 	}
@@ -49,9 +37,8 @@ func service(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	conn, err := upgrader.Upgrade(w, r, nil)
-
 	if err != nil {
-		fmt.Println("Error: " + err.Error())
+		fmt.Println("error: " + err.Error())
 	}
 
 	api := &apis.RequestDecode{}
@@ -61,26 +48,25 @@ func service(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for {
+
+			// Read Message Sent By Client
 			_, msg, err := conn.ReadMessage()
-
 			if err != nil {
-				fmt.Println("Error: " + err.Error())
+				fmt.Println("error: " + err.Error())
 			}
 
+			// Unmarshall JSON For Decoding
 			err = json.Unmarshal(msg, &api)
-
 			if err != nil {
-				fmt.Println("Error: " + err.Error())
+				fmt.Println("error: " + err.Error())
 			}
 
-			err = json.Unmarshal(msg, &common)
+			// Unmarshall JSON For Getting Request Type
+			json.Unmarshal(msg, &common)
 
+			// Handle Request
 			handler := apis.ActionHandlers[common.Action]
-			fmt.Println("here")
-			fmt.Println(handler)
-			a := handler(conn, api)
-			fmt.Println(a)
-			//apis.FollowRequest(conn, api)
+			handler(conn, api)
 		}
 	}()
 
