@@ -2,6 +2,7 @@ package apis
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/data"
@@ -21,6 +22,7 @@ var ActionHandlers = map[string]RequestHandler{
 
 var (
 	FollowNotifier = make(FollowshipNotifier)
+	PostNotifier   = make(PostingNotifier)
 )
 
 func FollowRequest(conn *websocket.Conn, req *RequestDecode) int {
@@ -44,18 +46,55 @@ func FollowRequest(conn *websocket.Conn, req *RequestDecode) int {
 }
 
 func PostRequest(conn *websocket.Conn, req *RequestDecode) int {
+
+	// Added a Post
+	PostNotifier <- *req.PostRequestDetails
+
+	// Send Response
+	conn.WriteJSON(req.PostRequestDetails)
+
 	return 0
 }
 
 func Broadcast() {
 
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
 	go func() {
 
+		defer wg.Done()
 		for {
 			followNotification := <-FollowNotifier
 			fmt.Printf("NOTIFICATION: User ID %d has followed %d", followNotification.CurrentUserId, followNotification.ToBeFollowedUserId)
+
+			notification := FollowNotification{Action: "FollowFeed", FollowedByUser: followNotification.CurrentUserId, FollowedUser: followNotification.ToBeFollowedUserId}
+
+			for _, wsclients := range data.Clients {
+				wsclients.WriteJSON(notification)
+			}
 		}
 
 	}()
 
+	wg.Add(1)
+
+	go func() {
+
+		defer wg.Done()
+		for {
+			postNotification := <-PostNotifier
+			fmt.Printf("NOTIFICATION: User ID %d has posted %s", postNotification.CurrentUserId, postNotification.ContentPost)
+
+			notification := PostedNotification{Action: "PostFeed", Follower: postNotification.CurrentUserId, ContentData: postNotification.ContentPost}
+
+			for _, wsclients := range data.Clients {
+				wsclients.WriteJSON(notification)
+			}
+		}
+
+	}()
+
+	wg.Wait()
 }

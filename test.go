@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/apis"
+	"projects.com/apps/twitter-app/data"
 )
 
 var upgrader = websocket.Upgrader{
@@ -40,6 +41,8 @@ func service(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("error: " + err.Error())
 	}
+
+	data.Clients = append(data.Clients, conn)
 
 	api := &apis.RequestDecode{}
 	common := &apis.CommonAPI{}

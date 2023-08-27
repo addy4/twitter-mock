@@ -2,12 +2,16 @@ package data
 
 import (
 	"fmt"
+
+	"github.com/gorilla/websocket"
 )
 
 type FriendsMemory map[int]map[int]bool
+type ClientList []*websocket.Conn
 
 var (
 	Friends = make(FriendsMemory)
+	Clients ClientList
 )
 
 func GetFollowers(friendList FriendsMemory, userID int) {
