@@ -44,8 +44,8 @@ func service(w http.ResponseWriter, r *http.Request) {
 
 	data.Clients = append(data.Clients, conn)
 
-	api := &apis.RequestDecode{}
-	common := &apis.CommonAPI{}
+	api := &data.RequestDecode{}
+	common := &data.CommonAPI{}
 
 	wg.Add(1)
 
