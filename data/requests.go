@@ -4,6 +4,7 @@ const (
 	FollowAction          = "follow"
 	PostAction            = "post"
 	PostsByFolloweeAction = "posts_by_followees"
+	Subscribe             = "subscribe"
 )
 
 type FollowshipNotifier chan FollowRequestParams
@@ -13,6 +14,7 @@ type RequestDecode struct {
 	FollowRequestDetails    *FollowRequestParams    `json:"follow,omitempty"`
 	PostRequestDetails      *PostRequestParams      `json:"post,omitempty"`
 	PostsByFolloweesDetails *PostsByFolloweesParams `json:"posts_by_followees"`
+	SubscribeRequestDetails *SubscribeRequestParams `json:"subscribe"`
 }
 
 type CommonAPI struct {
@@ -27,6 +29,11 @@ type FollowRequestParams struct {
 type PostRequestParams struct {
 	CurrentUserId int    `json:"current_user"`
 	ContentPost   string `json:"content"`
+}
+
+type SubscribeRequestParams struct {
+	CurrentUserId int    `json:"current_user"`
+	Subscription  string `json:"subscription"`
 }
 
 type FollowNotification struct {

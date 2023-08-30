@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/apis"
@@ -35,8 +34,6 @@ func main() {
 
 func service(w http.ResponseWriter, r *http.Request) {
 
-	var wg sync.WaitGroup
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("error: " + err.Error())
@@ -47,31 +44,27 @@ func service(w http.ResponseWriter, r *http.Request) {
 	api := &data.RequestDecode{}
 	common := &data.CommonAPI{}
 
-	wg.Add(1)
+	for {
 
-	go func() {
-		for {
-
-			// Read Message Sent By Client
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				fmt.Println("error: " + err.Error())
-			}
-
-			// Unmarshall JSON For Decoding
-			err = json.Unmarshal(msg, &api)
-			if err != nil {
-				fmt.Println("error: " + err.Error())
-			}
-
-			// Unmarshall JSON For Getting Request Type
-			json.Unmarshal(msg, &common)
-
-			// Handle Request
-			handler := apis.ActionHandlers[common.Action]
-			handler(conn, api)
+		// Read Message Sent By Client
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("read error: " + err.Error())
+			conn.Close()
+			return
 		}
-	}()
 
-	wg.Wait()
+		// Unmarshall JSON For Decoding
+		err = json.Unmarshal(msg, &api)
+		if err != nil {
+			fmt.Println("unmarshal error: " + err.Error())
+		}
+
+		// Unmarshall JSON For Getting Request Type
+		json.Unmarshal(msg, &common)
+
+		// Handle Request
+		handler := apis.ActionHandlers[common.Action]
+		handler(conn, api)
+	}
 }

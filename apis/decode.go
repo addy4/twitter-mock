@@ -14,6 +14,7 @@ var ActionHandlers = map[string]RequestHandler{
 	data.FollowAction:          FollowRequest,
 	data.PostAction:            PostRequest,
 	data.PostsByFolloweeAction: PostsByFollowees,
+	data.Subscribe:             SubscribeRequest,
 }
 
 var (
@@ -81,6 +82,17 @@ func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode) int {
 
 	return 0
 
+}
+
+func SubscribeRequest(conn *websocket.Conn, req *data.RequestDecode) int {
+
+	fmt.Println("Add subscribe logic...")
+
+	response := data.SubscribeRequestParams{CurrentUserId: req.SubscribeRequestDetails.CurrentUserId, Subscription: req.SubscribeRequestDetails.Subscription}
+
+	conn.WriteJSON(response)
+
+	return 0
 }
 
 func Broadcast() {
