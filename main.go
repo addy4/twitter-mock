@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/apis"
 	"projects.com/apps/twitter-app/data"
+	"projects.com/apps/twitter-app/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -21,9 +22,13 @@ func main() {
 
 	// WebSocket APIs Service
 	http.HandleFunc("/web", service)
+	http.HandleFunc("/webs", utils.Authorize(service))
 
 	// Broadcast
 	go apis.Broadcast()
+
+	// Validate Token
+	utils.ValidateToken("abcd")
 
 	// Starting Service
 	log.Print("Twitter Server Starting At localhost: 5020")
