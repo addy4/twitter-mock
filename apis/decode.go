@@ -64,18 +64,14 @@ func PostRequest(conn *websocket.Conn, req *data.RequestDecode) int {
 
 func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode) int {
 
-	fmt.Println("test")
 	// Posts By Followees
 	current_user := req.PostsByFolloweesDetails.CurrentUserId
 
 	// Write Back Posts By Followees
 	for timeIns := range data.Posts {
-		fmt.Println("test")
-		//fmt.Printf("Post: %s has been posted by %d at time %d\n", data.Posts[timeIns].ContentPost, data.Posts[timeIns].CurrentUserId, timeIns)
+
 		if data.Friends[current_user][data.Posts[timeIns].CurrentUserId] == true {
-
 			response := data.PostedNotification{Action: "posts_by_followee", Followee: data.Posts[timeIns].CurrentUserId, ContentPost: data.Posts[timeIns].ContentPost}
-
 			conn.WriteJSON(response)
 		}
 	}
@@ -106,7 +102,7 @@ func Broadcast() {
 		defer wg.Done()
 		for {
 			followNotification := <-FollowNotifier
-			fmt.Printf("NOTIFICATION: User ID %d has followed %d\n", followNotification.CurrentUserId, followNotification.Followee)
+			fmt.Printf("NOTIFICATION001: User ID %d has followed %d\n", followNotification.CurrentUserId, followNotification.Followee)
 
 			notification := data.FollowNotification{Action: "FollowFeed", Follower: followNotification.CurrentUserId, Followee: followNotification.Followee}
 
@@ -124,13 +120,29 @@ func Broadcast() {
 		defer wg.Done()
 		for {
 			postNotification := <-PostNotifier
-			fmt.Printf("NOTIFICATION: User ID %d has posted %s\n", postNotification.CurrentUserId, postNotification.ContentPost)
+			fmt.Printf("NOTIFICATION002: User ID %d has posted %s\n", postNotification.CurrentUserId, postNotification.ContentPost)
 
 			notification := data.PostedNotification{Action: "PostFeed", Followee: postNotification.CurrentUserId, ContentPost: postNotification.ContentPost}
 
 			for _, wsclients := range data.Clients {
 				wsclients.WriteJSON(notification)
 			}
+		}
+
+	}()
+
+	go func() {
+
+		defer wg.Done()
+		for {
+
+			sessionAdded := <-data.SessionNotifier
+			fmt.Printf("NOTIFICATION003: New Session added with session-id %s and user-id %s\n", sessionAdded.Session_Id, sessionAdded.User_Id)
+
+			for _, sessionDetails := range data.ActiveSessions {
+				fmt.Printf("NOTIFICATION003: Existing Session added with session-id %s and user-id %s\n", sessionDetails.Session_Id, sessionDetails.User_Id)
+			}
+
 		}
 
 	}()

@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/apis"
 	"projects.com/apps/twitter-app/data"
@@ -41,10 +43,16 @@ func service(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("error: " + err.Error())
+		fmt.Println("connection error: " + err.Error())
 	}
 
 	data.Clients = append(data.Clients, conn)
+
+	// Adding New Client Session
+	session_id := uuid.New().String()
+	session := data.ActiveUser{Websocket_Session: conn, Session_Id: data.SessionID(session_id), User_Id: data.ClientID(r.Header.Get("Tw-Client-Id"))}
+	data.ActiveSessions[data.SessionID(session_id)] = session
+	data.SessionNotifier <- session
 
 	api := &data.RequestDecode{}
 	common := &data.CommonAPI{}
@@ -55,6 +63,7 @@ func service(w http.ResponseWriter, r *http.Request) {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("read error: " + err.Error())
+			delete(data.ActiveSessions, data.SessionID(session_id))
 			conn.Close()
 			return
 		}

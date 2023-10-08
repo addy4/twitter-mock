@@ -17,27 +17,28 @@ type EmailID string
 type UserName string
 
 type SignedUser struct {
-	user_id   ClientID
-	email_id  EmailID
-	user_name UserName
+	User_Id   ClientID
+	Email_Id  EmailID
+	User_Name UserName
 }
 
 // Session
 type SessionID string
-type WebsocketSession *websocket.Conn
 
 type ActiveUser struct {
-	websocket_session WebsocketSession
-	user_id           ClientID
+	Websocket_Session *websocket.Conn
+	User_Id           ClientID
+	Session_Id        SessionID
 }
 
 // Post
 type TimeStamp time.Time
+type PostContent string
 
 type Post struct {
-	user_id    ClientID
-	time_stamp TimeStamp
-	content    string
+	User_Id   ClientID
+	Time_Post TimeStamp
+	Content   PostContent
 }
 
 // Maps
@@ -45,6 +46,9 @@ var ActiveSessions = make(map[SessionID]ActiveUser)
 var RegisteredUsers = make(map[UserName]SignedUser)
 var FriendList = make(map[ClientID]map[ClientID]bool)
 var PostsList []Post
+
+// Channels
+var SessionNotifier = make(chan ActiveUser)
 
 type PostsMemory map[int]PostRequestParams
 type FriendsMemory map[int]map[int]bool
