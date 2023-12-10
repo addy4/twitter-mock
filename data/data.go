@@ -49,6 +49,7 @@ var PostsList []Post
 
 // Channels
 var SessionNotifier = make(chan ActiveUser)
+var PostsNotifier = make(chan Post)
 
 type PostsMemory map[int]PostRequestParams
 type FriendsMemory map[int]map[int]bool
@@ -69,9 +70,24 @@ func GetFollowers(friendList FriendsMemory, userID int) {
 	}
 }
 
+func GetFollowers_v2(user_id ClientID) {
+
+	fmt.Println("For user ID: ", user_id)
+	for follower := range FriendList[user_id] {
+		fmt.Printf("... above user follows %s with status %t\n", follower, FriendList[user_id][follower])
+	}
+}
+
 func GetPosts(PostList PostsMemory) {
 
 	for timeIns := range PostList {
 		fmt.Printf("Post: %s has been posted by %d at time %d\n", PostList[timeIns].ContentPost, PostList[timeIns].CurrentUserId, timeIns)
+	}
+}
+
+func GetPosts_v2() {
+
+	for _, post := range PostsList {
+		fmt.Printf("Post: %s has been posted by %s at time %d\n", post.Content, post.User_Id, post.Time_Post)
 	}
 }

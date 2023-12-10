@@ -2,18 +2,18 @@ package apis
 
 import (
 	"fmt"
-	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/data"
 )
 
-type RequestHandler func(conn *websocket.Conn, req *data.RequestDecode) int
+type RequestHandler func(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int
 
 var ActionHandlers = map[string]RequestHandler{
-	data.FollowAction:          FollowRequest,
-	data.PostAction:            PostRequest,
-	data.PostsByFolloweeAction: PostsByFollowees,
+	data.FollowAction:          FollowRequest_v2,
+	data.PostAction:            PostRequest_v2,
+	data.PostsByFolloweeAction: PostsByFollowees_v2,
 	data.Subscribe:             SubscribeRequest,
 }
 
@@ -22,7 +22,7 @@ var (
 	PostNotifier   = make(data.PostingNotifier)
 )
 
-func FollowRequest(conn *websocket.Conn, req *data.RequestDecode) int {
+func FollowRequest(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
 
 	// Add Friend
 	if data.Friends[req.FollowRequestDetails.CurrentUserId] == nil {
@@ -42,7 +42,27 @@ func FollowRequest(conn *websocket.Conn, req *data.RequestDecode) int {
 	return 0
 }
 
-func PostRequest(conn *websocket.Conn, req *data.RequestDecode) int {
+func FollowRequest_v2(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
+
+	// Add Friend
+	if data.FriendList[user_id] == nil {
+		data.FriendList[user_id] = make(map[data.ClientID]bool)
+	}
+	data.FriendList[user_id][data.RegisteredUsers[data.UserName(req.FollowRequestDetails.FolloweeName)].User_Id] = true // second index should be user_id of followee which is mapped to userName of followe
+
+	// Send Response
+	conn.WriteJSON(req.FollowRequestDetails)
+
+	// Send To Queue
+	FollowNotifier <- *req.FollowRequestDetails
+
+	// Get Followers
+	data.GetFollowers_v2(user_id)
+
+	return 0
+}
+
+func PostRequest(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
 
 	// Time
 	data.TimeInstance--
@@ -62,7 +82,26 @@ func PostRequest(conn *websocket.Conn, req *data.RequestDecode) int {
 	return 0
 }
 
-func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode) int {
+func PostRequest_v2(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
+
+	// Added to Mem DB
+	data.Posts[data.TimeInstance] = *req.PostRequestDetails
+	postedContent := data.Post{User_Id: user_id, Time_Post: data.TimeStamp(time.Now()), Content: data.PostContent(req.PostRequestDetails.ContentPost)}
+	data.PostsList = append(data.PostsList, postedContent)
+
+	// Added a Post
+	data.PostsNotifier <- postedContent
+
+	// Send Response
+	conn.WriteJSON(req.PostRequestDetails)
+
+	// Show Posts
+	data.GetPosts_v2()
+
+	return 0
+}
+
+func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
 
 	// Posts By Followees
 	current_user := req.PostsByFolloweesDetails.CurrentUserId
@@ -71,7 +110,7 @@ func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode) int {
 	for timeIns := range data.Posts {
 
 		if data.Friends[current_user][data.Posts[timeIns].CurrentUserId] == true {
-			response := data.PostedNotification{Action: "posts_by_followee", Followee: data.Posts[timeIns].CurrentUserId, ContentPost: data.Posts[timeIns].ContentPost}
+			response := data.PostedNotification{Action: "posts_by_followee", FolloweeUserID: "444", ContentPost: data.PostContent("Hi")}
 			conn.WriteJSON(response)
 		}
 	}
@@ -80,7 +119,22 @@ func PostsByFollowees(conn *websocket.Conn, req *data.RequestDecode) int {
 
 }
 
-func SubscribeRequest(conn *websocket.Conn, req *data.RequestDecode) int {
+func PostsByFollowees_v2(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
+
+	// Write Back Posts By Followees
+	for _, post := range data.PostsList {
+
+		if data.FriendList[user_id][post.User_Id] == true {
+			response := data.PostedNotification{Action: "posts_by_followee", FolloweeUserID: post.User_Id, ContentPost: post.Content}
+			conn.WriteJSON(response)
+		}
+	}
+
+	return 0
+
+}
+
+func SubscribeRequest(conn *websocket.Conn, req *data.RequestDecode, user_id data.ClientID) int {
 
 	fmt.Println("Add subscribe logic...")
 
@@ -89,63 +143,4 @@ func SubscribeRequest(conn *websocket.Conn, req *data.RequestDecode) int {
 	conn.WriteJSON(response)
 
 	return 0
-}
-
-func Broadcast() {
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-
-	go func() {
-
-		defer wg.Done()
-		for {
-			followNotification := <-FollowNotifier
-			fmt.Printf("NOTIFICATION001: User ID %d has followed %d\n", followNotification.CurrentUserId, followNotification.Followee)
-
-			notification := data.FollowNotification{Action: "FollowFeed", Follower: followNotification.CurrentUserId, Followee: followNotification.Followee}
-
-			for _, wsclients := range data.Clients {
-				wsclients.WriteJSON(notification)
-			}
-		}
-
-	}()
-
-	wg.Add(1)
-
-	go func() {
-
-		defer wg.Done()
-		for {
-			postNotification := <-PostNotifier
-			fmt.Printf("NOTIFICATION002: User ID %d has posted %s\n", postNotification.CurrentUserId, postNotification.ContentPost)
-
-			notification := data.PostedNotification{Action: "PostFeed", Followee: postNotification.CurrentUserId, ContentPost: postNotification.ContentPost}
-
-			for _, wsclients := range data.Clients {
-				wsclients.WriteJSON(notification)
-			}
-		}
-
-	}()
-
-	go func() {
-
-		defer wg.Done()
-		for {
-
-			sessionAdded := <-data.SessionNotifier
-			fmt.Printf("NOTIFICATION003: New Session added with session-id %s and user-id %s\n", sessionAdded.Session_Id, sessionAdded.User_Id)
-
-			for _, sessionDetails := range data.ActiveSessions {
-				fmt.Printf("NOTIFICATION003: Existing Session added with session-id %s and user-id %s\n", sessionDetails.Session_Id, sessionDetails.User_Id)
-			}
-
-		}
-
-	}()
-
-	wg.Wait()
 }

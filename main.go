@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	"projects.com/apps/twitter-app/apis"
 	"projects.com/apps/twitter-app/data"
+	registeration "projects.com/apps/twitter-app/register"
 	"projects.com/apps/twitter-app/utils"
 )
 
@@ -21,6 +22,9 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
+
+	// Register Users
+	registeration.RegisterUser()
 
 	// WebSocket APIs Service
 	http.HandleFunc("/web", service)
@@ -46,9 +50,9 @@ func service(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("connection error: " + err.Error())
 	}
 
-	data.Clients = append(data.Clients, conn)
+	//data.Clients = append(data.Clients, conn)
 
-	// Adding New Client Session
+	// Add Client Session
 	session_id := uuid.New().String()
 	session := data.ActiveUser{Websocket_Session: conn, Session_Id: data.SessionID(session_id), User_Id: data.ClientID(r.Header.Get("Tw-Client-Id"))}
 	data.ActiveSessions[data.SessionID(session_id)] = session
@@ -79,6 +83,6 @@ func service(w http.ResponseWriter, r *http.Request) {
 
 		// Handle Request
 		handler := apis.ActionHandlers[common.Action]
-		handler(conn, api)
+		handler(conn, api, session.User_Id)
 	}
 }

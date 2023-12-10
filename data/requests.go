@@ -22,8 +22,9 @@ type CommonAPI struct {
 }
 
 type FollowRequestParams struct {
-	CurrentUserId int `json:"current_user"`
-	Followee      int `json:"followee"`
+	CurrentUserId int    `json:"current_user"`
+	Followee      int    `json:"followee"`
+	FolloweeName  string `json:"followeeName"`
 }
 
 type PostRequestParams struct {
@@ -43,9 +44,9 @@ type FollowNotification struct {
 }
 
 type PostedNotification struct {
-	Action      string `json:"action"`   // post_feed
-	Followee    int    `json:"followee"` // "X" posted Y
-	ContentPost string `json:"content"`  // "Y" has been posted by X
+	Action         string      `json:"action"`           // post_feed
+	FolloweeUserID ClientID    `json:"followee_user_id"` // "X" posted Y
+	ContentPost    PostContent `json:"content"`          // "Y" has been posted by X
 }
 
 type PostsByFolloweesParams struct {
