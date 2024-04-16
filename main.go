@@ -27,8 +27,8 @@ func main() {
 	registeration.RegisterUser()
 
 	// WebSocket APIs Service
-	http.HandleFunc("/web", service)
-	http.HandleFunc("/webs", utils.Authorize(service))
+	//http.HandleFunc("/web", service)
+	http.Handle("/webs", utils.Authorize(service))
 
 	// Broadcast
 	go apis.Broadcast()
@@ -73,7 +73,8 @@ func service(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Unmarshall JSON For Decoding
-		err = json.Unmarshal(msg, &api)
+		//err = json.Unmarshal(msg, &api)
+		err = json.Unmarshal(msg, api)
 		if err != nil {
 			fmt.Println("unmarshal error: " + err.Error())
 		}

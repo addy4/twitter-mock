@@ -14,10 +14,10 @@ type PostingNotifier chan PostRequestParams
 
 // Request Decode
 type RequestDecode struct {
-	FollowRequestDetails    *FollowRequestParams    `json:"follow,omitempty"`
-	PostRequestDetails      *PostRequestParams      `json:"post,omitempty"`
-	PostsByFolloweesDetails *PostsByFolloweesParams `json:"posts_by_followees"`
-	SubscribeRequestDetails *SubscribeRequestParams `json:"subscribe"`
+	FollowRequestDetails    FollowRequestParams    `json:"follow,omitempty"`
+	PostRequestDetails      PostRequestParams      `json:"post,omitempty"`
+	PostsByFolloweesDetails PostsByFolloweesParams `json:"posts_by_followees"`
+	SubscribeRequestDetails SubscribeRequestParams `json:"subscribe"`
 }
 
 // Action Decode
