@@ -67,5 +67,42 @@ curl --location 'https://trusting-tereshkova-12o8uqnuqz.projects.oryapis.com/oau
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=b39503c6-********' \
 --data-urlencode 'client_secret=aabh******' \
---data-urlencode 'grant_type=client_cred****'
+--data-urlencode 'grant_type=client_credentials'
 ```
+
+### WebSocket Communication b/w Users
+- Create multiple clients, "user1", "user2" and "aabhatia".
+- Generate token for "aabhatia"
+- Connect to **ws://localhost:5020/webs** and add header as **Authorization: Bearer _JWT_**
+- Use following API to follow
+```bash
+{
+    "action": "follow",
+    "follow": {
+        "followeeName": "user2"
+    }
+}
+```
+- Generate token for "user2"
+- Connect to **ws://localhost:5020/webs** and add header as **Authorization: Bearer _JWT_**
+- Use following API to post
+```bash
+{
+    "action": "post",
+    "post": {
+        "content": "Hi, there!"
+    }
+}
+```
+- A notification will be receieved by other client sessions connected to WS server (e.g. aabhatia's client session)
+- Connect to **ws://localhost:5020/webs** with header as **Authorization: Bearer _JWT_** where JWT is JWT of aabhatia user
+- Use following API to get posts by followees
+```bash
+{
+    "action": "posts_by_followees",
+    "posts_by_followees": {
+        "foo": true
+    }
+}
+```
+- _(foo is placeholder for now)_
