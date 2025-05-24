@@ -95,7 +95,7 @@ curl --location 'https://trusting-tereshkova-12o8uqnuqz.projects.oryapis.com/oau
 }
 ```
 - A notification will be receieved by other client sessions connected to WS server (e.g. aabhatia's client session)
-- Connect to **ws://localhost:5020/webs** with header as **Authorization: Bearer _JWT_** where JWT is JWT of aabhatia user
+- Connect to aabhatia's session again
 - Use following API to get posts by followees
 ```bash
 {
@@ -105,4 +105,3 @@ curl --location 'https://trusting-tereshkova-12o8uqnuqz.projects.oryapis.com/oau
     }
 }
 ```
-- _(foo is placeholder for now)_
